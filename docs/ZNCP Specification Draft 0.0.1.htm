@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Zero-Network Communication Protocol Specification</title>
+</head>
+<body>
+	<h1>Zero-Network Communication Protocol Specification</h1>
+
+	<p>
+		<abbr title="Zero-Network Communication Protocol">ZNCP</abbr> is meant to be an alternative to <abbr title="Hyper Text Transfer Protocol version 1.1">HTTP 1.1</abbr>. Some key features of <abbr title="Zero-Network Communication Protocol">ZNCP</abbr> that sets it apart from <abbr title="Hyper Text Transfer Protocol version1.1">HTTP 1.1</abbr> are
+	</p>
+
+	<ul>
+		<li>Binary centric so messages are generally smaller and quicker to parse.</li>
+		<li>Only a single connection between clients and servers are ever opened.</li>
+		<li>The server can send the client resources the client needs before the client requests them, and caching is taken into consideration.</li>
+	</ul>
+
+	<p>
+		<abbr title="Zero-Network Communication Protocol">ZNCP</abbr>, like <abbr title="Hyper Text Transfer Protocol version 1.1">HTTP 1.1</abbr>, is an application layer protocol expected to be run atop a TCP connection. The guarentees and behavior of TCP connections are assumed, and these assumptions should be kept in mind when deciding to use a different tranport layer.
+	</p>
+
+	<h2>Glossary</h2>
+
+	<dl>
+		<dt>Node</dt>
+		<dd>A computer accessible on the network.</dd>
+
+		<dt>Client</dt>
+		<dd>A node that initiates a connection with a server.</dd>
+
+		<dt>Server</dt>
+		<dd>A node that is publicly available on the network and accepts connections from other nodes.</dd>
+
+		<dt>Resource</dt>
+		<dd>Anything that can be identified by a URI (this includes enpoints servicing API commands, documents, binary file, etc.)</dd>
+
+		<dt>Request</dt>
+		<dd>A message that is not a response to some other message. A response is not necessarily sent for each request received.</dd>
+
+		<dt>Response</dt>
+		<dd>A message that is a reply to a particular request and is associated with that request. There can be multiple responses for a single request.</dd>
+	</dl>
+
+	<a name="SECTION_FRAMING" />
+	<h2>Framing and Binary Specification</h2>
+
+	<p>
+		All data sent according to the <abbr title="Zero-Network Communication Protocol">ZNCP</abbr> protocol MUST follow the binary formats described in this section <em>precisely</em>.
+	</p>
+
+	<a name="SECTION_INITIATION" />
+	<h3>Initiation Message</h3>
+
+	<p>
+		After a connection is made, the Initiation Message MUST be sent by the client. The format of the Initiation Message is as follows.
+	</p>
+
+	<table class="binary-format">
+		<tr>
+			<th scope="col">Contents</th>
+			<th scope="col">Type</th>
+		</tr>
+		<tr>
+			<td>Protocol Name</td>
+			<td>UTF-8 String</td>
+		</tr>
+		<tr>
+			<td>Protocol Version</td>
+			<td>varint</td>
+		</tr>
+		<tr>
+			<td>Revision</td>
+			<td>varint</td>
+		</tr>
+	</table>
+
+	<dl class="binary-format">
+		<dt>Protocol Name</dt>
+		<dd>
+			The first 4 bytes of the Initiation Message MUST be the UTF-8 encoded string <code>ZNCP</code> (the bytes in hex notation: <code>5A4E4350</code>). There MUST NOT be a null terminating character at the end.
+		</dd>
+
+		<dt>Protocol Version</dt>
+		<dd>
+			This will be incremented by 1 every time a breaking change is made to the protocol. The Protocol Version of this specification may be found at the top of this document.
+		</dd>
+
+		<dt>Revision Number</dt>
+		<dd>
+			This will be incremented by 1 every time the specification is changed in any way that may affect implementations. The Revision Number of this specification may be found at the top of the document.
+		</dd>
+	</dl>
+
+	<p>
+		A client SHOULD use the highest version and revision it is aware of and that the server supports unless asked to do otherwise by the server.
+	</p>
+
+	<aside>
+		See <a href="#CONTROLACTION_CHANGE_VERSION">CHANGE_VERSION</a> and <a href="#CONTROLACTION_UNKNOWN_REVISION">UNKNOWN_REVISION</a> for information on what to do upon reception of an Initiation Message with an unsupported version or revision, respectively.
+	</aside>
+
+	<a name="SECTION_MESSAGE_FRAME" />
+	<h3>Message Wrapper</h3>
+
+	<p>
+		Every message sent must be wrapped in a Message Wrapper. The Message Wrapper is laid out as follows.
+	</p>
+
+	<table class="binary-format">
+		<tr>
+			<th scope="col">Contents</th>
+			<th scope="col">Type</th>
+		</tr>
+		<tr>
+			<td>Message Type</td>
+			<td>varint</td>
+		</tr>
+		<tr>
+			<td>Payload Size</td>
+			<td>32-bit unsigned integer</td>
+		</tr>
+		<tr>
+			<td>Payload</td>
+			<td>raw</td>
+		</tr>
+	</table>
+
+	<dl class="binary-format">
+		<dt>Message Type</dt>
+		<dd>
+			The type of message this is (see the following sections for more the various message types).
+		</dd>
+
+		<dt>Payload Size</dt>
+		<dd>
+			The size of the Payload in bytes. May be 0.
+		</dd>
+
+		<dt>Payload</dt>
+		<dd>
+			Raw data whose format is entirely dependent on the Message Type.
+		</dd>
+	</dl>
+
+	<a name="SECTION_CONTROL_REQUEST" />
+	<h2>Control Requests and Responses</h2>
+
+	<p>
+		A Control Request is a request that does not deal with a specific resource (this is in contrast with <a href="SECTION_RESOURCE_REQUEST">Resource Requests</a>). A Control Response is a response to a particular Control Request. They both have the same binary format, but they differ in the meaning of each field.
+	</p>
+
+	<table class="binary-format">
+		<tr>
+			<th scope="col">Contents</th>
+			<th scope="col">Type</th>
+		</tr>
+		<tr>
+			<td>Action</td>
+			<td>varint</td>
+		</tr>
+		<tr>
+			<td>Unique ID</td>
+			<td>varint</td>
+		</tr>
+		<tr>
+			<td>Payload</td>
+			<td>raw</td>
+		</tr>
+	</table>
+
+	<dl class="binary-format">
+		<dt>Action</dt>
+		<dd>
+			The action this Control Request would like to perform (see <a href="#SECTION_ACTIONS">Actions</a>).
+		</dd>
+
+		<dt>Unique ID</dt>
+		<dd>
+			A unique number that MUST not be shared with any other outstanding requests (all types of requests). Unique ID's of requests that will not receive any further responses SHOULD be recycled, see <a href="#CONTROLACTION_RECYCLE_UID">RECYCLE_UID</a>.
+		</dd>
+
+		<dt>Payload</dt>
+		<dd>
+			Raw data whose format is entirely dependent on the Action. The size of this Payload can be determined from the Payload Size field in the Message Wrapper (minus the bytes taken up by the Action and Unique ID fields).
+		</dd>
+	</dl>
+
+	<h3>Resource Requests and Responses</h3>
+
+
+
+
+	<a name="SECTION_CONNECTIONS" />
+	<h2>Connections</h2>
+
+	<p>
+		A connection may be made by the client when it wants to perform some action on a resource. If a connection is already available, the client SHOULD use that connection. Servers MAY deny multiple connections from a single client, in which case the server MUST be sure that the connections are actually from the same client (be wary of NAT).
+	</p>
+
+	<p>
+		A connection can be closed by either the server or the client at any time, and a <a href="#CONTROLACTION_GOODBYE">GOODBYE</a> request MAY be sent by either to provide a reason for the disconnection.
+	</p>
+
+	<p>
+		The client SHOULD NOT close the connection itself unless no further requests are expected to be sent to the server in the near future (recommended timeout <em>for the client</em> is 1 minute). A <a href="#CONTROLACTION_KEEP_ALIVE">KEEP_ALIVE</a> request can be sent by the server to request an extension to a client's timeout if any exists.
+	</p>
+
+	<p>
+		The server may choose to close the connection immediately after all of the client's requests are completed, or leave the connection open. It is preferred that the connection is left open until the client disconnects if it is reasonable to do so.
+	</p>
+
+	<h2>Actions</h2>
+
+	<a name="ACTION_BURST">
+	<h3>BURST</h3>
+	<p>
+		The client SHOULD send a <a href="#CONTROLACTION_BURST">BURST</a> request if it expects to send more than one request within a single connection.
+	</p>
+</body>
+</html>
