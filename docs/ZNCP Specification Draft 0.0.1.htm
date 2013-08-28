@@ -7,7 +7,7 @@
 	<h1>Zero-Network Communication Protocol Specification</h1>
 
 	<p>
-		<abbr title="Zero-Network Communication Protocol">ZNCP</abbr> is meant to be an alternative to <abbr title="Hyper Text Transfer Protocol version 1.1">HTTP 1.1</abbr>. Some key features of <abbr title="Zero-Network Communication Protocol">ZNCP</abbr> that sets it apart from <abbr title="Hyper Text Transfer Protocol version1.1">HTTP 1.1</abbr> are
+		<abbr title="Zero-Network Communication Protocol">ZNCP</abbr> is meant to be an alternative to <abbr title="Hyper Text Transfer Protocol version 1.1">HTTP 1.1</abbr>. Some key features of <abbr title="Zero-Network Communication Protocol">ZNCP</abbr> that set it apart from <abbr title="Hyper Text Transfer Protocol version1.1">HTTP 1.1</abbr> are
 	</p>
 
 	<ul>
@@ -24,13 +24,13 @@
 
 	<dl>
 		<dt>Node</dt>
-		<dd>A computer accessible on the network.</dd>
+		<dd>A device accessible on a network.</dd>
 
 		<dt>Client</dt>
 		<dd>A node that initiates a connection with a server.</dd>
 
 		<dt>Server</dt>
-		<dd>A node that is publicly available on the network and accepts connections from other nodes.</dd>
+		<dd>A node that is available on a network and accepts connections from other nodes.</dd>
 
 		<dt>Resource</dt>
 		<dd>Anything that can be identified by a URI (this includes enpoints servicing API commands, documents, binary file, etc.)</dd>
@@ -67,18 +67,18 @@
 		</tr>
 		<tr>
 			<td>Protocol Version</td>
-			<td>varint</td>
+			<td>uvarint8_32</td>
 		</tr>
 		<tr>
 			<td>Revision</td>
-			<td>varint</td>
+			<td>uvarint8_32</td>
 		</tr>
 	</table>
 
 	<dl class="binary-format">
 		<dt>Protocol Name</dt>
 		<dd>
-			The first 4 bytes of the Initiation Message MUST be the UTF-8 encoded string <code>ZNCP</code> (the bytes in hex notation: <code>5A4E4350</code>). There MUST NOT be a null terminating character at the end.
+			The first 4 bytes of the Initiation Message MUST be the UTF-8 encoded string <code>ZNCP</code> (the bytes in hex notation: <code>5A4E4350</code>).
 		</dd>
 
 		<dt>Protocol Version</dt>
@@ -93,7 +93,7 @@
 	</dl>
 
 	<p>
-		A client SHOULD use the highest version and revision it is aware of and that the server supports unless asked to do otherwise by the server.
+		A client SHOULD use the highest version and revision it and the server supports.
 	</p>
 
 	<aside>
@@ -104,7 +104,7 @@
 	<h3>Message Wrapper</h3>
 
 	<p>
-		Every message sent must be wrapped in a Message Wrapper. The Message Wrapper is laid out as follows.
+		Every message sent must be wrapped in a Message Wrapper with the exception of the Initiation Message. The Message Wrapper is laid out as follows.
 	</p>
 
 	<table class="binary-format">
@@ -114,15 +114,15 @@
 		</tr>
 		<tr>
 			<td>Message Type</td>
-			<td>varint</td>
+			<td>uvarint8_32</td>
 		</tr>
 		<tr>
 			<td>Payload Size</td>
-			<td>32-bit unsigned integer</td>
+			<td>uvarint8_64</td>
 		</tr>
 		<tr>
 			<td>Payload</td>
-			<td>raw</td>
+			<td><em>depends on Message Type</em></td>
 		</tr>
 	</table>
 
@@ -147,7 +147,7 @@
 	<h2>Control Requests and Responses</h2>
 
 	<p>
-		A Control Request is a request that does not deal with a specific resource (this is in contrast with <a href="SECTION_RESOURCE_REQUEST">Resource Requests</a>). A Control Response is a response to a particular Control Request. They both have the same binary format, but they differ in the meaning of each field.
+		A Control Request is a request that does not deal with a specific resource (this is in contrast with <a href="SECTION_RESOURCE_REQUEST">Resource Requests</a>). A Control Response is a response to a particular Control Request. They both have the same binary format and fields, but they differ in the meaning of each field.
 	</p>
 
 	<table class="binary-format">
@@ -157,15 +157,15 @@
 		</tr>
 		<tr>
 			<td>Action</td>
-			<td>varint</td>
+			<td>uvarint8_32</td>
 		</tr>
 		<tr>
 			<td>Unique ID</td>
-			<td>varint</td>
+			<td>uvarint8_64</td>
 		</tr>
 		<tr>
 			<td>Payload</td>
-			<td>raw</td>
+			<td><em>depends on action</em></td>
 		</tr>
 	</table>
 
@@ -182,20 +182,17 @@
 
 		<dt>Payload</dt>
 		<dd>
-			Raw data whose format is entirely dependent on the Action. The size of this Payload can be determined from the Payload Size field in the Message Wrapper (minus the bytes taken up by the Action and Unique ID fields).
+			Raw data whose format is entirely dependent on the Action. Note that the size of this Payload can be determined from the Payload Size field in the Message Wrapper (minus the bytes taken up by the Action and Unique ID fields).
 		</dd>
 	</dl>
 
 	<h3>Resource Requests and Responses</h3>
 
-
-
-
 	<a name="SECTION_CONNECTIONS" />
 	<h2>Connections</h2>
 
 	<p>
-		A connection may be made by the client when it wants to perform some action on a resource. If a connection is already available, the client SHOULD use that connection. Servers MAY deny multiple connections from a single client, in which case the server MUST be sure that the connections are actually from the same client (be wary of NAT).
+		A connection may be made by the client when it wants to perform some action on a resource. If a connection is already available, the client SHOULD use that connection. Servers MAY deny multiple connections from a single client, in which case the server should be sure that the connections are actually from the same client (be wary of NAT).
 	</p>
 
 	<p>
@@ -203,7 +200,7 @@
 	</p>
 
 	<p>
-		The client SHOULD NOT close the connection itself unless no further requests are expected to be sent to the server in the near future (recommended timeout <em>for the client</em> is 1 minute). A <a href="#CONTROLACTION_KEEP_ALIVE">KEEP_ALIVE</a> request can be sent by the server to request an extension to a client's timeout if any exists.
+		The client SHOULD NOT close the connection itself unless no further requests are expected to be sent to the server in the near future (recommended timeout <em>for the client</em> is 1 minute without user activity). A <a href="#CONTROLACTION_KEEP_ALIVE">KEEP_ALIVE</a> request can be sent by the server to request an extension to a client's timeout if any exists.
 	</p>
 
 	<p>
