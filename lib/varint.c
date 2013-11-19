@@ -8,17 +8,34 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// 24(23), 8(7), 8(7), 8(7), 8(7), 8(7), 8(7)
+
+error_t write_uvarint8_32(Message * msg, uint32_t num) {
+	if (msg == NULL) {
+		LOG_ERR_RET(INVALID_ARGS, "msg is NULL");
+		return INVALID_ARGS;
+	}
+
+	do {
+
+	} while (num == 0);
+}
+
 error_t read_uvarint8_32(Message * msg, uint32_t * num) {
 	if (num == NULL) {
 		LOG_ERR_RET(INVALID_ARGS, "num is NULL");
 		return INVALID_ARGS;
 	}
+	if (msg == NULL) {
+		LOG_ERR_RET(INVALID_ARGS, "msg is NULL");
+		return INVALID_ARGS;
+	}
 
 	// The maximum width of the varint in bytes.
-	static const uint_fast8_t max_bytes_k = CEIL_DIVIDE(32, 7);
+	static const uint_fast8_t max_bytes_k = 5;
 
 	// The number of meaningful bits possible in the last byte of a varint.
-	static const uint_fast8_t last_meaningful_bits_k = (32 / 7) % 7;
+	static const uint_fast8_t last_meaningful_bits_k = 4;
 
 	uint32_t result = 0x00;
 	uint_fast8_t bytes_read = 0;
